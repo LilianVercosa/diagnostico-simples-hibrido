@@ -157,6 +157,29 @@
   /* ---------- QUIZ ---------- */
   #screen-quiz{background:var(--cream);min-height:100vh;}
   .quiz-wrap{max-width:600px;margin:0 auto;padding:48px 24px 80px;}
+
+  /* ---------- LEAD CAPTURE ---------- */
+  #screen-lead{background:var(--cream);min-height:100vh;}
+  .lead-wrap{max-width:520px;margin:0 auto;padding:56px 24px 80px;}
+  .lead-wrap h2{
+    font-family:'Fraunces',serif;font-weight:500;font-size:26px;
+    margin:0 0 12px;line-height:1.3;
+  }
+  .lead-wrap .lead-sub{font-size:15px;color:var(--ink-soft);margin:0 0 32px;}
+  .field-group{margin-bottom:18px;}
+  .field-group label{
+    display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;
+  }
+  .field-group input{
+    width:100%;border:1px solid var(--line-light);border-radius:6px;
+    padding:13px 14px;font-family:'Inter',sans-serif;font-size:15px;
+    color:var(--ink);background:var(--card);
+  }
+  .field-group input:focus{outline:none;border-color:var(--gold);}
+  .field-error{
+    font-size:12px;color:#A32D2D;margin-top:6px;display:none;
+  }
+  .lead-privacy{font-size:12px;color:var(--ink-soft);margin:16px 0 26px;}
   .progress-wrap{display:flex;gap:6px;margin-bottom:28px;}
   .dot{flex:1;height:4px;border-radius:2px;background:var(--line-light);transition:background .3s;}
   .dot.done,.dot.active{background:var(--gold);}
@@ -334,6 +357,38 @@
   </div>
 </div>
 
+<!-- ===================== TELA 2.5: CAPTURA DE CONTATO ===================== -->
+<div class="screen" id="screen-lead">
+  <div class="author-bar on-light">
+    <div class="avatar">LV</div>
+    <div>
+      <div class="author-name">Lilian Verçosa</div>
+      <div class="author-role">Especialista em Tributação na Saúde</div>
+    </div>
+  </div>
+  <div class="lead-wrap">
+    <span class="eyebrow on-light">Antes de começar</span>
+    <h2>Antes de prosseguir, com quem estou falando?</h2>
+    <p class="lead-sub">Coloca seu nome e WhatsApp pra eu te enviar o resultado e, se fizer sentido, falar com você sobre a Comunidade Especialista em Saúde.</p>
+
+    <div class="field-group">
+      <label for="lead-name">Seu nome</label>
+      <input type="text" id="lead-name" placeholder="Como você se chama">
+      <p class="field-error" id="lead-name-error">Preenche seu nome pra continuar.</p>
+    </div>
+
+    <div class="field-group">
+      <label for="lead-phone">Seu WhatsApp</label>
+      <input type="tel" id="lead-phone" placeholder="(81) 90000-0000">
+      <p class="field-error" id="lead-phone-error">Preenche um WhatsApp válido pra continuar.</p>
+    </div>
+
+    <p class="lead-privacy">Seus dados são usados só pra te enviar o resultado e falar sobre a Comunidade — nada de spam.</p>
+
+    <button class="btn-dark" id="lead-next">Começar o diagnóstico →</button>
+  </div>
+</div>
+
 <!-- ===================== TELA 3: QUIZ ===================== -->
 <div class="screen" id="screen-quiz">
   <div class="author-bar on-light">
@@ -496,7 +551,44 @@ function goTo(id){
 }
 
 document.getElementById('start-btn').addEventListener('click', () => goTo('screen-context'));
-document.getElementById('context-next').addEventListener('click', () => goTo('screen-quiz'));
+document.getElementById('context-next').addEventListener('click', () => goTo('screen-lead'));
+
+let leadName = '';
+let leadPhone = '';
+
+document.getElementById('lead-next').addEventListener('click', () => {
+  const nameInput = document.getElementById('lead-name');
+  const phoneInput = document.getElementById('lead-phone');
+  const nameError = document.getElementById('lead-name-error');
+  const phoneError = document.getElementById('lead-phone-error');
+
+  const name = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
+  const phoneDigits = phone.replace(/\D/g, '');
+
+  let valid = true;
+  nameError.style.display = 'none';
+  phoneError.style.display = 'none';
+  nameInput.style.borderColor = 'var(--line-light)';
+  phoneInput.style.borderColor = 'var(--line-light)';
+
+  if (name.length < 2){
+    nameError.style.display = 'block';
+    nameInput.style.borderColor = '#A32D2D';
+    valid = false;
+  }
+  if (phoneDigits.length < 10){
+    phoneError.style.display = 'block';
+    phoneInput.style.borderColor = '#A32D2D';
+    valid = false;
+  }
+  if (!valid) return;
+
+  leadName = name;
+  leadPhone = phoneDigits;
+
+  goTo('screen-quiz');
+});
 
 function updateProgress(){
   const wrap = document.getElementById('progress');
@@ -563,15 +655,19 @@ document.getElementById('finish').addEventListener('click', () => {
   zones.forEach(z => z.classList.remove('on-teal','on-gray','on-gold'));
   labels.forEach(l => l.classList.remove('active','teal','gray','gold'));
 
+  let verdictLabel = '';
+
   if (total <= 3){
     zones[0].classList.add('on-teal');
     labels[0].classList.add('active','teal');
+    verdictLabel = 'Manter no Simples';
     title.textContent = 'Pelo que você contou, o melhor caminho é continuar no Simples do jeito que está';
     text.textContent = 'Não parece que esse cliente vai sobrar crédito de imposto pra aproveitar agora, a maior parte do dinheiro entra de paciente particular e o custo maior é com a equipe, que não gera crédito nenhum. Trocar de regime nesse caso tende a dar mais trabalho sem ganho real. Mesmo assim, vale rodar os números antes de bater o martelo de vez.';
   } else if (total <= 6){
     zones[0].classList.add('on-teal');
     zones[1].classList.add('on-gray');
     labels[1].classList.add('active','gray');
+    verdictLabel = 'Precisa simular';
     title.textContent = 'Esse aqui tem coisa puxando pros dois lados, precisa colocar na ponta do lápis';
     text.textContent = 'Pelas respostas, não dá pra cravar uma direção só de olho. Tem elementos que favorecem ficar como está e outros que abrem espaço pro híbrido. Esse é o tipo de cliente que precisa mesmo de uma simulação com os números dele antes de qualquer decisão.';
   } else {
@@ -579,12 +675,31 @@ document.getElementById('finish').addEventListener('click', () => {
     zones[1].classList.add('on-gray');
     zones[2].classList.add('on-gold');
     labels[2].classList.add('active','gold');
+    verdictLabel = 'Priorizar híbrido';
     title.textContent = 'Vale a pena colocar esse cliente na frente da fila pra simular o híbrido';
     text.textContent = 'O perfil indica bom potencial de aproveitar crédito e uma estrutura mais preparada pra tocar isso no dia a dia. Ainda assim, é uma tendência, o próximo passo é rodar a simulação com os números reais pra confirmar se o ganho compensa.';
   }
 
-  const waMessage = encodeURIComponent('Oi, fiz o diagnóstico de Simples ou Híbrido e quero saber mais sobre a Comunidade Especialista em Saúde.');
+  const firstName = leadName ? leadName.split(' ')[0] : '';
+  const waText = firstName
+    ? `Oi, meu nome é ${firstName}. Fiz o diagnóstico de Simples ou Híbrido e quero saber mais sobre a Comunidade Especialista em Saúde.`
+    : 'Oi, fiz o diagnóstico de Simples ou Híbrido e quero saber mais sobre a Comunidade Especialista em Saúde.';
+  const waMessage = encodeURIComponent(waText);
   document.getElementById('whatsapp-link').href = 'https://wa.me/5581979011831?text=' + waMessage;
+
+  // envia o lead pro Kommo só agora, já com o resultado do diagnóstico
+  if (leadName && leadPhone){
+    fetch('/api/submit-lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: leadName,
+        phone: leadPhone,
+        score: total,
+        verdict: verdictLabel
+      })
+    }).catch(() => { /* falha silenciosa, não bloqueia o usuário */ });
+  }
 
   goTo('screen-result');
 });
@@ -592,6 +707,10 @@ document.getElementById('finish').addEventListener('click', () => {
 document.getElementById('restart').addEventListener('click', () => {
   document.querySelectorAll('input[type="radio"]').forEach(i => i.checked = false);
   document.querySelectorAll('.opt.checked').forEach(o => o.classList.remove('checked'));
+  document.getElementById('lead-name').value = '';
+  document.getElementById('lead-phone').value = '';
+  leadName = '';
+  leadPhone = '';
   showStep(0);
   goTo('screen-hero');
 });
