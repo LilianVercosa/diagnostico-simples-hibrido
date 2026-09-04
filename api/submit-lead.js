@@ -1,3 +1,5 @@
+const PIPELINE_ID = 14272563; // Funil de isca — Diagnóstico Simples ou Híbrido
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -28,6 +30,7 @@ export default async function handler(req, res) {
 
     const leadPayload = {
       name: leadName,
+      pipeline_id: PIPELINE_ID,
       _embedded: {
         contacts: [
           {
