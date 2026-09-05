@@ -1,5 +1,9 @@
 const PIPELINE_ID = 14272563; // Funil de isca — Diagnóstico Simples ou Híbrido
 
+const FIELD_PERFIL = 4352370;
+const FIELD_PONTUACAO = 4352372;
+const FIELD_RESULTADO = 4352374;
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -25,16 +29,31 @@ export default async function handler(req, res) {
 
     const hasResult = typeof score !== 'undefined' && verdict;
 
-    // Nome do lead fica limpo — perfil e resultado viram tags, não texto no título
+    // Nome do lead fica limpo — perfil e resultado ficam nos campos personalizados
     const leadName = `Diagnóstico Simples ou Híbrido — ${name}`;
 
-    const tags = [];
-    if (segment) tags.push({ name: segment });
-    if (hasResult) tags.push({ name: verdict });
+    const customFields = [];
+    if (segment) {
+      customFields.push({
+        field_id: FIELD_PERFIL,
+        values: [{ value: segment }],
+      });
+    }
+    if (hasResult) {
+      customFields.push({
+        field_id: FIELD_PONTUACAO,
+        values: [{ value: `${score}/10` }],
+      });
+      customFields.push({
+        field_id: FIELD_RESULTADO,
+        values: [{ value: verdict }],
+      });
+    }
 
     const leadPayload = {
       name: leadName,
       pipeline_id: PIPELINE_ID,
+      ...(customFields.length > 0 ? { custom_fields_values: customFields } : {}),
       _embedded: {
         contacts: [
           {
@@ -47,7 +66,6 @@ export default async function handler(req, res) {
             ],
           },
         ],
-        ...(tags.length > 0 ? { tags } : {}),
       },
     };
 
@@ -69,7 +87,7 @@ export default async function handler(req, res) {
 
     const kommoData = await kommoRes.json();
 
-    // Adiciona uma nota detalhada e organizada no lead recém-criado
+    // Além dos campos, mantém uma nota com o resumo completo por segurança
     try {
       const createdLead = kommoData?._embedded?.leads?.[0];
       const leadId = createdLead?.id;
@@ -99,7 +117,6 @@ export default async function handler(req, res) {
         }
       }
     } catch (noteErr) {
-      // não bloqueia a resposta principal se a nota falhar
       console.error('Falha ao adicionar nota no lead:', noteErr);
     }
 
