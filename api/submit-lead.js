@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { name, phone, score, verdict } = req.body || {};
+    const { name, phone, segment, score, verdict } = req.body || {};
 
     if (!name || !phone) {
       res.status(400).json({ error: 'Nome e telefone são obrigatórios' });
@@ -24,9 +24,13 @@ export default async function handler(req, res) {
     }
 
     const hasResult = typeof score !== 'undefined' && verdict;
-    const leadName = hasResult
-      ? `Diagnóstico Simples ou Híbrido — ${name} (${score}/10 — ${verdict})`
-      : `Diagnóstico Simples ou Híbrido — ${name}`;
+
+    // Nome do lead fica limpo — perfil e resultado viram tags, não texto no título
+    const leadName = `Diagnóstico Simples ou Híbrido — ${name}`;
+
+    const tags = [];
+    if (segment) tags.push({ name: segment });
+    if (hasResult) tags.push({ name: verdict });
 
     const leadPayload = {
       name: leadName,
@@ -43,6 +47,7 @@ export default async function handler(req, res) {
             ],
           },
         ],
+        ...(tags.length > 0 ? { tags } : {}),
       },
     };
 
@@ -64,13 +69,18 @@ export default async function handler(req, res) {
 
     const kommoData = await kommoRes.json();
 
-    // Se tivermos o resultado do diagnóstico, adiciona uma nota detalhada no lead recém-criado
-    if (hasResult) {
-      try {
-        const createdLead = kommoData?._embedded?.leads?.[0];
-        const leadId = createdLead?.id;
+    // Adiciona uma nota detalhada e organizada no lead recém-criado
+    try {
+      const createdLead = kommoData?._embedded?.leads?.[0];
+      const leadId = createdLead?.id;
 
-        if (leadId) {
+      if (leadId) {
+        const noteLines = [];
+        if (segment) noteLines.push(`Perfil: ${segment}`);
+        if (hasResult) noteLines.push(`Resultado do diagnóstico "Simples ou Híbrido": ${score} de 10 pontos.`);
+        if (hasResult) noteLines.push(`Tendência: ${verdict}.`);
+
+        if (noteLines.length > 0) {
           await fetch(`https://${subdomain}.kommo.com/api/v4/leads/${leadId}/notes`, {
             method: 'POST',
             headers: {
@@ -81,16 +91,16 @@ export default async function handler(req, res) {
               {
                 note_type: 'common',
                 params: {
-                  text: `Resultado do diagnóstico "Simples ou Híbrido": ${score} de 10 pontos — tendência: ${verdict}.`,
+                  text: noteLines.join('\n'),
                 },
               },
             ]),
           });
         }
-      } catch (noteErr) {
-        // não bloqueia a resposta principal se a nota falhar
-        console.error('Falha ao adicionar nota no lead:', noteErr);
       }
+    } catch (noteErr) {
+      // não bloqueia a resposta principal se a nota falhar
+      console.error('Falha ao adicionar nota no lead:', noteErr);
     }
 
     res.status(200).json({ ok: true });
