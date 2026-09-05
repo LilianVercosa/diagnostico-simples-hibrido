@@ -383,6 +383,17 @@
       <p class="field-error" id="lead-phone-error">Preenche um WhatsApp válido pra continuar.</p>
     </div>
 
+    <div class="field-group">
+      <label>Você é?</label>
+      <div class="opts" data-q="segment" style="margin-bottom:0;">
+        <label class="opt"><input type="radio" name="lead-segment" value="Contador(a)">Contador(a)</label>
+        <label class="opt"><input type="radio" name="lead-segment" value="Advogado(a)">Advogado(a)</label>
+        <label class="opt"><input type="radio" name="lead-segment" value="Profissional de saúde">Profissional de saúde</label>
+        <label class="opt"><input type="radio" name="lead-segment" value="Outro">Outro</label>
+      </div>
+      <p class="field-error" id="lead-segment-error">Escolhe uma opção pra continuar.</p>
+    </div>
+
     <p class="lead-privacy">Seus dados são usados só pra te enviar o resultado e falar sobre a Comunidade — nada de spam.</p>
 
     <button class="btn-dark" id="lead-next">Começar o diagnóstico →</button>
@@ -555,12 +566,15 @@ document.getElementById('context-next').addEventListener('click', () => goTo('sc
 
 let leadName = '';
 let leadPhone = '';
+let leadSegment = '';
 
 document.getElementById('lead-next').addEventListener('click', () => {
   const nameInput = document.getElementById('lead-name');
   const phoneInput = document.getElementById('lead-phone');
   const nameError = document.getElementById('lead-name-error');
   const phoneError = document.getElementById('lead-phone-error');
+  const segmentError = document.getElementById('lead-segment-error');
+  const segmentChecked = document.querySelector('input[name="lead-segment"]:checked');
 
   const name = nameInput.value.trim();
   const phone = phoneInput.value.trim();
@@ -569,6 +583,7 @@ document.getElementById('lead-next').addEventListener('click', () => {
   let valid = true;
   nameError.style.display = 'none';
   phoneError.style.display = 'none';
+  segmentError.style.display = 'none';
   nameInput.style.borderColor = 'var(--line-light)';
   phoneInput.style.borderColor = 'var(--line-light)';
 
@@ -582,10 +597,15 @@ document.getElementById('lead-next').addEventListener('click', () => {
     phoneInput.style.borderColor = '#A32D2D';
     valid = false;
   }
+  if (!segmentChecked){
+    segmentError.style.display = 'block';
+    valid = false;
+  }
   if (!valid) return;
 
   leadName = name;
   leadPhone = phoneDigits;
+  leadSegment = segmentChecked.value;
 
   goTo('screen-quiz');
 });
@@ -695,6 +715,7 @@ document.getElementById('finish').addEventListener('click', () => {
       body: JSON.stringify({
         name: leadName,
         phone: leadPhone,
+        segment: leadSegment,
         score: total,
         verdict: verdictLabel
       })
@@ -711,6 +732,7 @@ document.getElementById('restart').addEventListener('click', () => {
   document.getElementById('lead-phone').value = '';
   leadName = '';
   leadPhone = '';
+  leadSegment = '';
   showStep(0);
   goTo('screen-hero');
 });
